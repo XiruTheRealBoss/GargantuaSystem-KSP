@@ -16,9 +16,10 @@ namespace GargantuaSystem
     public class MillerWaves : MonoBehaviour
     {
         const string BodyName = "Miller";
-        const int WaveCount = 5;
+        const int WaveCount = 2;           // the film: two waves, the second already coming as the first passes
+        const double WaveGap = 6;          // degrees between them (~68 km, ~11 min); then ~11 h of calm sea
         const double CrestHeight = 1200;   // m (the film says ~4000 ft); creative liberty on the scale
-        const double Speed = 100;          // m/s at the equator: a wave passes each point every ~2.3 h
+        const double Speed = 100;          // m/s at the equator: the pair passes each point every ~11 h
         const double WarnDistance = 33000; // m: a crest at this distance triggers the warning (warp stops earlier)
         const double FaceWidth = 2600;     // m: steep front face
         const double BackWidth = 14000;    // m: back slope scale (gaussian)
@@ -68,6 +69,63 @@ namespace GargantuaSystem
             Debug.Log("[GargantuaSystem] MillerWaves: " + WaveCount + " waves, " + mesh.vertexCount + " vertices, sign " + rotationSign
                 + ", shader " + (material.shader != null ? material.shader.name : "NULL"));
             SelfCheck();
+            rumble = gameObject.AddComponent<AudioSource>();
+            rumble.clip = RumbleClip();
+            rumble.loop = true;
+            rumble.spatialBlend = 0; // 2D: the wave is everywhere on the horizon
+            rumble.volume = 0;
+            rumble.Play();
+        }
+
+        AudioSource rumble;
+
+        /// Rumble that grows as a crest approaches the active vessel (silent beyond WarnDistance, full at the crest).
+        void Update()
+        {
+            if (rumble == null) return;
+            Vessel v = FlightGlobals.ActiveVessel;
+            float target = 0;
+            if (v != null && v.mainBody == body && !MapView.MapIsEnabled && Math.Abs(v.latitude) <= MaxLat && v.altitude < 3 * CrestHeight)
+            {
+                double t = Planetarium.GetUniversalTime();
+                double dist = TimeToNextCrest(v.latitude, v.longitude, t) * Speed * Math.Cos(v.latitude * Math.PI / 180);
+                float near = Mathf.Clamp01(1 - (float)(dist / WarnDistance));
+                float inside = WaveHeight(v.latitude, v.longitude, t) > 2 ? 1 : 0;
+                target = Mathf.Max(near * near, inside);
+            }
+            target *= GameSettings.AMBIENCE_VOLUME;
+            rumble.volume = Mathf.MoveTowards(rumble.volume, target, Time.unscaledDeltaTime * 0.5f);
+            rumble.pitch = 0.8f + 0.3f * target;
+        }
+
+        /// 6 s seamless loop of low "ocean roar": brown noise plus a slow surging swell, generated in code (no asset).
+        static AudioClip RumbleClip()
+        {
+            const int Rate = 22050, Len = Rate * 6;
+            var data = new float[Len];
+            var rng = new System.Random(1972);
+            double brown = 0;
+            for (int i = 0; i < Len; i++)
+            {
+                brown = 0.995 * brown + 0.05 * (rng.NextDouble() * 2 - 1);
+                double phase = 2 * Math.PI * i / Len;
+                double swell = 0.65 + 0.35 * Math.Sin(3 * phase);               // 3 surges per loop
+                double hum = 0.25 * Math.Sin(2 * Math.PI * 38 * i / Rate);      // deep body
+                data[i] = (float)((brown * 2.2 + hum) * swell);
+            }
+            // crossfade the last 0.5 s into the start so the loop has no click
+            int fade = Rate / 2;
+            for (int i = 0; i < fade; i++)
+            {
+                float w = i / (float)fade;
+                data[i] = data[i] * w + data[Len - fade + i] * (1 - w);
+            }
+            float peak = 0;
+            foreach (float x in data) peak = Math.Max(peak, Math.Abs(x));
+            for (int i = 0; i < Len - fade; i++) data[i] /= peak;
+            var clip = AudioClip.Create("GargSys_WaveRumble", Len - fade, 1, Rate, false);
+            clip.SetData(data, 0);
+            return clip;
         }
 
         void FixedUpdate()
@@ -80,7 +138,7 @@ namespace GargantuaSystem
                 Transform w = waves[k];
                 if (w.gameObject.activeSelf != active) w.gameObject.SetActive(active);
                 if (!active) continue;
-                double lon = (k * 360.0 / WaveCount + 23 + angularSpeed * t) % 360;
+                double lon = (23 - k * WaveGap + angularSpeed * t) % 360;
                 w.localPosition = Vector3.zero;
                 w.localRotation = Quaternion.AngleAxis(rotationSign * (float)lon, polarAxis);
             }
@@ -117,7 +175,7 @@ namespace GargantuaSystem
             double best = double.MaxValue;
             for (int k = 0; k < WaveCount; k++)
             {
-                double crest = k * 360.0 / WaveCount + 23 + angularSpeed * t + crestOffset;
+                double crest = 23 - k * WaveGap + angularSpeed * t + crestOffset;
                 double ahead = ((lon - crest) % 360 + 360) % 360; // degrees the crest still has to travel to get here
                 best = Math.Min(best, ahead / angularSpeed);
             }
@@ -133,7 +191,7 @@ namespace GargantuaSystem
             double h = 0;
             for (int k = 0; k < WaveCount; k++)
             {
-                double crest = k * 360.0 / WaveCount + 23 + angularSpeed * t + crestOffset;
+                double crest = 23 - k * WaveGap + angularSpeed * t + crestOffset;
                 double dDeg = ((lon - crest) % 360 + 540) % 360 - 180; // -180..180, positive = ahead (east)
                 h = Math.Max(h, CrestHeight * Along(latRad) * SmoothStep(MaxLat, 45, Math.Abs(lat)) * Profile(dDeg * metersPerDeg));
             }

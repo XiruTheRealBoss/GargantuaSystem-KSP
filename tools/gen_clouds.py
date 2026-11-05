@@ -43,6 +43,16 @@ def edmunds(lat, lon, xyz):
     return np.full(lat.shape, 0.97, np.float32), cover
 
 
+def mann_aurora(lat, lon, xyz):
+    # Auroral ovals around both poles (pulsar wind on Mann's thin air): wavy curtains, green with a pink fringe.
+    alat = np.degrees(np.abs(lat))
+    wobble = 4 * (fbm(warp(xyz, 0.2, 1.5, 241), 2.0, 4, 242) - 0.5)
+    band = np.exp(-((alat - 70 - wobble) / 3.5) ** 2)
+    curtains = smoothstep(0.35, 0.8, ridged(warp(xyz * np.float32([3, 1, 3]), 0.3, 3.0, 243), 6.0, 5, 244))
+    cover = np.clip(band * (0.25 + 0.75 * curtains), 0, 1)
+    return np.clip(band, 0, 1), cover
+
+
 LAYERS = {"Miller_clouds": (miller, 4096), "Mann_clouds": (mann, 2048), "Edmunds_clouds": (edmunds, 2048)}
 
 
@@ -66,6 +76,13 @@ def main():
         save_rgb(OUT / f"{name}.png", rgb, cover)
         save_gray(OUT_VOL / f"{name}_coverage.png", cover)
         print(f"{name}: mean coverage {cover.mean():.0%}")
+    # aurora: self-lit 2D layer, colour baked in (green core, pink upper fringe)
+    hue, cover = render(2048, 1024, mann_aurora)
+    check_seamless(cover, "Mann_aurora")
+    green, pink = np.array([0.35, 1.0, 0.55]), np.array([0.95, 0.45, 0.85])
+    rgb = green * hue[..., None] + pink * (1 - hue[..., None])
+    save_rgb(OUT / "Mann_aurora.png", rgb, cover)
+    print(f"Mann_aurora: mean coverage {cover.mean():.1%}")
     d = detail()
     check_seamless(d, "cloud detail")
     save_gray(OUT / "cloud_detail.png", d)

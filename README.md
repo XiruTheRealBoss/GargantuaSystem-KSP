@@ -37,13 +37,20 @@ world warmed by the star **Pantagruel**. A spinning **pulsar** lights the dark w
 ## Features
 
 - **Gargantua** — gravitational lensing and a tilted, lensed accretion disk (Singularity).
-- **Miller's giant waves** — five 1.2 km tidal waves sweep the planet. Floating vessels and Kerbals are lifted,
-  carried and set down again, and time warp stops with a warning before a crest arrives.
+- **Miller's giant waves** — two 1.2 km tidal waves sweep the planet, the second one already coming as the first
+  passes. Floating vessels and Kerbals are lifted, carried and set down again, time warp stops with a warning before
+  a crest arrives, and a rumble grows as it gets close.
+- **Time dilation** — 1 hour on Miller = 7 years outside, like the film (`TimeDilation` setting).
 - **Detailed worlds** — 16-bit heightmaps, an 8K colour map on Mann, Parallax terrain and 3D rocks, Scatterer
   atmospheres and Miller's ocean, EVE clouds (volumetric with blackrack's clouds).
 - **A real pulsar** — glowing neutron star with animated jets that does not steal your lighting.
+- **Mann's aurora** — the pulsar's wind lights up Mann's sky (EVE).
+- **Science** — custom crew report, EVA report and surface sample results, with nods to the film.
+- **Loading screens** — in-game shots of the system while KSP loads.
+- **Optional extras** — Firefly reentry colours per planet, Scatterer sun flares for Pantagruel and the pulsar, and
+  a Plan B base on Edmunds with Kerbal Konstructs.
 - **Optional wormhole** — Kerbol side near Jool (Sarnus with OPM, Saturn with RSS/KSRSS) to Gargantua.
-- **Settings** — wormhole on/off, Kerbol–Gargantua distance, skybox on/off.
+- **Settings** — wormhole on/off, Kerbol–Gargantua distance, skybox on/off, time dilation, Real Scale (10x).
 - **Movie quotes** — a few references hidden in the game texts, in English and Brazilian Portuguese.
 
 ## Celestial bodies
@@ -89,16 +96,20 @@ Edit `GameData/GargantuaSystem/GargantuaSystem_Settings.cfg`:
 - `Wormholes` (True/False): the Kerbol ↔ Gargantua wormhole.
 - `DistanceFactor` (1, 0.1, 10, 100): Kerbol–Gargantua distance. `0` makes Kerbol orbit Gargantua (experimental).
 - `DisableSkybox` (True/False): turns off the custom skybox.
+- `TimeDilation` (number, default 60000): how many times faster the universe ages while you are in Miller's SOI. The
+  lost time is applied when you return to the Space Center or Tracking Station. `0` turns it off.
+- `RealScale` (True/False): the whole Gargantua system 10x bigger. Turned on automatically with RSS/KSRSS.
 
 ## Compatibility
 
 - **Principia:** forces `DistanceFactor = 0`, no wormholes and a black skybox (Singularity artifacts otherwise).
   *Untested.*
 - **RSS:** tested with Real Solar System 20.1.3 (CKAN). Gargantua's bodies survive RSS's cleanup, the Sun-side
-  wormhole moves to Saturn and distances scale ×10. RSS Reborn (installed with its own installer) is not supported.
+  wormhole moves to Saturn, distances scale ×10 and the Gargantua system turns on Real Scale (10x). RSS Reborn (installed with its own installer) is not supported.
 - **KSRSS:** same patches as RSS. *Untested.*
 - **OPM:** tested. The Kerbol-side wormhole moves to Sarnus.
 - **KerbalGalaxy 3:** incompatible (it also adds a body named `Gargantua`).
+- **Firefly, Kerbal Konstructs:** optional, picked up automatically when installed.
 
 ## Known issues
 
@@ -122,7 +133,7 @@ your `KSP.log`.
 
 - **Scale:** Gargantua is 1.0E30 kg (the film's is ≥ 10⁸ solar masses). The real mass makes orbits near the horizon
   relativistic and unplayable. The disk outer radius is limited to 2.2E10 m (Singularity breaks above ~3E10 m).
-- No time dilation (1 hour on Miller = 7 years in the film).
+- Time dilation is applied when you leave the flight scene, not continuously (KSP has a single clock).
 - Miller's 1.3 g, the planets' radii, orbits and terrain details are invented to be playable and to look like
   the film. Miller's waves: 1200 m crests at 100 m/s, analytic buoyancy (not a fluid simulation).
 - Pantagruel as Edmunds' star and the pulsar's jets/orbit are not from the film.
