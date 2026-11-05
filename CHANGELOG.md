@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.10.0 — 2026-11-05
+## 0.9.4 — 2026-11-05
 
 - Miller: two giant waves instead of five, the second one already coming as the first passes (like the film), and
   a rumble that grows as a crest gets close.
